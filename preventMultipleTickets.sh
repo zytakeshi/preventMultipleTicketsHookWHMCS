@@ -73,8 +73,8 @@ function preventMultipleTicketsPostSubmit(\$vars) {
     return \$vars;
 }
 
-add_hook('ClientAreaPageSubmitTicket', 1, 'preventMultipleTicketsPreSubmit');
 add_hook('TicketOpenValidation', 1, 'preventMultipleTicketsPostSubmit');
+add_hook('ClientAreaPageSubmitTicket', 1, 'preventMultipleTicketsPreSubmit');
 EOL
 
     display_message "预防钩子已安装到 $HOOK_FILE" "Prevention hook installed to $HOOK_FILE"
