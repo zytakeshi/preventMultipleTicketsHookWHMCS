@@ -90,7 +90,7 @@ EOL
         ["vietnamese.php"]="\$_LANG['preventMultipleTicketsError'] = 'Bạn đã có một yêu cầu đang mở. Vui lòng giải quyết yêu cầu hiện có trước khi mở một yêu cầu mới.';"
     )
 
-    LANG_DIR="$WHMCS_DIR/lang"
+    LANG_DIR="$WHMCS_DIR/lang/overrides"
     for file in "${!translations[@]}"; do
         LANG_FILE="$LANG_DIR/$file"
         if [ ! -f "$LANG_FILE" ]; then
