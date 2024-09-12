@@ -34,13 +34,17 @@ install_prevention_system() {
     HOOKS_DIR="$WHMCS_DIR/includes/hooks"
     mkdir -p "$HOOKS_DIR"
 
-    # Create the prevention hook file
-    HOOK_FILE="$HOOKS_DIR/ticket_prevention_hook.php"
-    cat > "$HOOK_FILE" << EOL
+    # Create the prevention hook files
+    PRE_SUBMIT_FILE="$HOOKS_DIR/preventMultipleTicketsPreSubmit.php"
+    POST_SUBMIT_FILE="$HOOKS_DIR/preventMultipleTicketsPostSubmit.php"
+
+    # Create preventMultipleTicketsPreSubmit.php
+    cat > "$PRE_SUBMIT_FILE" << EOL
 <?php
+
 use WHMCS\Database\Capsule;
 
-function checkOpenTickets(\$clientId) {
+function checkOpenTicketsPreSubmit(\$clientId) {
     return Capsule::table('tbltickets')
         ->where('userid', \$clientId)
         ->whereIn('status', ['Open', 'Answered', 'Customer-Reply', 'In Progress'])
@@ -49,35 +53,61 @@ function checkOpenTickets(\$clientId) {
 
 function preventMultipleTicketsPreSubmit(\$vars) {
     global \$_LANG;
+
     if (!isset(\$_SESSION['uid'])) {
         return \$vars;
     }
+
     \$clientId = \$_SESSION['uid'];
-    \$openTicketsCount = checkOpenTickets(\$clientId);
+    \$openTicketsCount = checkOpenTicketsPreSubmit(\$clientId);
+
     if (\$openTicketsCount > 0) {
         \$vars['errormessage'] = \$_LANG['preventMultipleTicketsError'];
+        error_log('Error message set for user ' . \$clientId . ' with ' . \$openTicketsCount . ' open tickets.');
     }
+
     return \$vars;
+}
+
+add_hook('ClientAreaPageSubmitTicket', 1, 'preventMultipleTicketsPreSubmit');
+EOL
+
+    # Create preventMultipleTicketsPostSubmit.php
+    cat > "$POST_SUBMIT_FILE" << EOL
+<?php
+
+use WHMCS\Database\Capsule;
+use WHMCS\Exception\ProgramExit;
+
+function checkOpenTicketsPostSubmit(\$clientId) {
+    return Capsule::table('tbltickets')
+        ->where('userid', \$clientId)
+        ->whereIn('status', ['Open', 'Answered', 'Customer-Reply', 'In Progress'])
+        ->count();
 }
 
 function preventMultipleTicketsPostSubmit(\$vars) {
     global \$_LANG;
+
     if (!isset(\$_SESSION['uid'])) {
         return \$vars;
     }
+
     \$clientId = \$_SESSION['uid'];
-    \$openTicketsCount = checkOpenTickets(\$clientId);
+    \$openTicketsCount = checkOpenTicketsPostSubmit(\$clientId);
+
     if (\$openTicketsCount > 1) {
-        throw new \WHMCS\Exception\ProgramExit(\$_LANG['preventMultipleTicketsError']);
+        error_log('Preventing ticket creation for user ' . \$clientId . ' with ' . \$openTicketsCount . ' open tickets.');
+        throw new ProgramExit(\$_LANG['preventMultipleTicketsError']);
     }
+
     return \$vars;
 }
 
 add_hook('TicketOpenValidation', 1, 'preventMultipleTicketsPostSubmit');
-add_hook('ClientAreaPageSubmitTicket', 1, 'preventMultipleTicketsPreSubmit');
 EOL
 
-    display_message "预防钩子已安装到 $HOOK_FILE" "Prevention hook installed to $HOOK_FILE"
+    display_message "预防钩子已安装到 $PRE_SUBMIT_FILE 和 $POST_SUBMIT_FILE" "Prevention hooks installed to $PRE_SUBMIT_FILE and $POST_SUBMIT_FILE"
 
     # Add translations
     declare -A translations=(
@@ -91,6 +121,7 @@ EOL
     )
 
     LANG_DIR="$WHMCS_DIR/lang/overrides"
+    mkdir -p "$LANG_DIR"
     for file in "${!translations[@]}"; do
         LANG_FILE="$LANG_DIR/$file"
         if [ ! -f "$LANG_FILE" ]; then
@@ -107,17 +138,22 @@ EOL
 remove_prevention_system() {
     WHMCS_DIR=$(get_input "请输入WHMCS安装目录：" "Enter WHMCS installation directory: ")
 
-    # Remove hook file
-    HOOK_FILE="$WHMCS_DIR/includes/hooks/ticket_prevention_hook.php"
-    if [ -f "$HOOK_FILE" ]; then
-        rm "$HOOK_FILE"
-        display_message "预防钩子已移除。" "Prevention hook removed."
-    else
-        display_message "预防钩子文件不存在。" "Prevention hook file does not exist."
+    # Remove hook files
+    PRE_SUBMIT_FILE="$WHMCS_DIR/includes/hooks/preventMultipleTicketsPreSubmit.php"
+    POST_SUBMIT_FILE="$WHMCS_DIR/includes/hooks/preventMultipleTicketsPostSubmit.php"
+
+    if [ -f "$PRE_SUBMIT_FILE" ]; then
+        rm "$PRE_SUBMIT_FILE"
+        display_message "预防钩子已移除。" "Prevention hook file removed: $PRE_SUBMIT_FILE"
+    fi
+
+    if [ -f "$POST_SUBMIT_FILE" ]; then
+        rm "$POST_SUBMIT_FILE"
+        display_message "预防钩子已移除。" "Prevention hook file removed: $POST_SUBMIT_FILE"
     fi
 
     # Remove translations
-    LANG_DIR="$WHMCS_DIR/lang"
+    LANG_DIR="$WHMCS_DIR/lang/overrides"
     for file in "chinese-tw.php" "chinese.php" "english.php" "farsi.php" "japanese.php" "spanish.php" "vietnamese.php"; do
         LANG_FILE="$LANG_DIR/$file"
         if [ -f "$LANG_FILE" ]; then
