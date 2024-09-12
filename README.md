@@ -1,7 +1,3 @@
-Here's a README file for your WHMCS ticket prevention hook that you can use for GitHub. It explains the purpose, installation, usage, and removal of the hook, including details about the script provided.
-
----
-
 # WHMCS Ticket Prevention System
 
 ## Overview
