@@ -4,7 +4,8 @@
 
 The WHMCS Ticket Prevention System is a hook for WHMCS that prevents users from opening new support tickets if they already have unresolved or active tickets. This system is useful for managing ticket load and ensuring that existing issues are addressed before new ones are submitted.
 
-This repository includes a Bash script to facilitate the installation and removal of the prevention system and its translations.
+This repository includes `preventMultipleTickets.sh`, a Bash installer that
+writes the WHMCS hook files and language override entries.
 
 ## Features
 
@@ -30,7 +31,8 @@ This repository includes a Bash script to facilitate the installation and remova
    bash <(curl -L -s https://raw.githubusercontent.com/zytakeshi/preventMultipleTicketsHookWHMCS/main/preventMultipleTickets.sh)
    ```
 
-   Follow the prompts to provide the WHMCS installation directory and choose the appropriate options.
+   Follow the prompts to select a language, provide the WHMCS installation
+   directory, and choose install.
 
 ## Usage
 
@@ -50,7 +52,8 @@ The script includes translations for the following languages:
 - Spanish
 - Vietnamese
 
-These translations will be added to the corresponding language files in the WHMCS `lang` directory.
+These translations are appended to files under the WHMCS `lang/overrides`
+directory.
 
 ## Removing the System
 
@@ -58,10 +61,10 @@ To remove the prevention system, including the hook and translations, follow the
 
 1. **Run the Removal Script**
 
-   Execute the script to remove the hook and translations:
+   Execute the same script and choose the removal option:
 
    ```bash
-   ./install_script.sh
+   ./preventMultipleTickets.sh
    ```
 
 2. **Follow the Prompts**
@@ -70,7 +73,14 @@ To remove the prevention system, including the hook and translations, follow the
 
 ## Customization
 
-You can customize the hook or translations by editing the `ticket_prevention_hook.php` file or language files directly. Ensure that any changes are tested in a staging environment before applying them to your production system.
+The installer creates these hook files:
+
+- `includes/hooks/preventMultipleTicketsPreSubmit.php`
+- `includes/hooks/preventMultipleTicketsPostSubmit.php`
+
+Customize those generated files or the language override entries after
+installation. Ensure that any changes are tested in a staging environment before
+applying them to production.
 
 ## Troubleshooting
 
